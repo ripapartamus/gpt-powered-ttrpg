@@ -1,0 +1,8 @@
+credentials.py
+*.pyc
+save_game/
+.ipnyb_checkpoints
+venv/
+*.xml
+*.iml
+.idea/
