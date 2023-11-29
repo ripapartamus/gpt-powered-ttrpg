@@ -1,7 +1,7 @@
 # system prompt for overall context
 
 system_prompt = """You are an experienced game master with all of the knowledge of the world's tabletop RPGs at your disposal. You are here to guide the user through a RPG experience with humor, wit, excitement, and pathos. 
-You are good natured and fair, but you're not afraid to let the player's choices result in negative consequences!"""
+You are good natured and fair, but you're not afraid to let the player's choices result in negative consequences! The player prefers to keep the game tone {game_tone}."""
 
 # prompt for creating new setting
 setting_quiz_prompt = """Your will ask a user about their preferences, and from those preferences craft a setting for a tabletop RPG setting that suits their tastes. The catch is, you'll be asking them about preferences that don't directly relate to games!
@@ -24,7 +24,7 @@ setting_quiz_format = """{
 
 setting_selection_prompt_1 = """The following is a list of personality quiz questions and the user's responses: 
 \n {quiz_and_results}
-Based on your interpretation of their personality quiz, please select EXACTLY {num_setting_categories} of the categories from the json object below for a roleplaying game setting. From each of those {num_setting_categories} categories, select exactly ONE subcategory. 
+Based on your interpretation of their personality quiz, please select EXACTLY {num_setting_categories} of the categories from the json object below for a role-playing game setting. From each of those {num_setting_categories} categories, select exactly ONE subcategory. 
 \n Here are the categories and subcategories for you to choose from, you must choose EXACTLY {num_setting_categories} categories and ONLY ONE SUBCATEGORY FROM EACH CATEGORY.
 \n {setting_options}"""
 
@@ -70,7 +70,9 @@ setting_options = {
   }
 }
 
-setting_generation_prompt_1 = """The following are 2 setting categories chosen for a tabletop roleplaying game:
+tone_options = ["light and playful", "dark and serious", "contemplative and high-concept", "balanced between light, serious, and contemplative", "kid-friendly"]
+
+setting_generation_prompt_1 = """The following are 2 setting categories chosen for a tabletop role-playing game:
 {setting_categories}
 You will then combine the selected subcategories to create a new, unique world for the game.
 """
@@ -89,10 +91,9 @@ You will return a description of this world to the user. The format of this desc
     Fun fact 3 about the world, its culture, or its inhabitants
   ]
 }
-
 """
 
-location_generation_prompt = """Below you will find the setting for a tabletop roleplaying game, along with some background information on that setting. Based on these details, please provide {num_locations} locations of interest within the setting.
+location_generation_prompt = """Below you will find the setting for a tabletop role-playing game, along with some background information on that setting. Based on these details, please provide {num_locations} locations of interest within the setting.
 Each location of interest should showcase the fascinating and diverse world of the setting, but fit together into a cohesive world--these places should be able to coexist in the same setting.
 
 Return the list as a json object that includes location name, location physical description, and reason for location's importance.
@@ -100,7 +101,7 @@ Return the list as a json object that includes location name, location physical 
 Here are the details of the world: {setting_details}
 """
 
-story_beat_generation_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with locations of interest and a description of the player's character. Based on these details, please write a story in {num_story_beats} acts. 
+story_beat_generation_prompt_1 = """Below you will find the setting for a tabletop role-playing game, along with locations of interest and a description of the player's character. Based on these details, please write a story in {num_story_beats} acts. 
 First, provide a description of where the player is starting in this world. What is their initial role? How do they fit into the world around them?
 Second, provide a description of where the player will eventually end up if they're successful in this adventure. What will they achieve? How will their status change as a result of their actions?
 Third, provide a 2-3 sentence story arc that will describe how the player will get from their starting point to that end point.
@@ -147,7 +148,7 @@ Please output this as a json object using the following format:
 """
 
 # prompts for building a character
-race_option_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with some locations of interest within that setting. Based on these details, please create 4 possible playable races for the player to choose from, along with a brief description of each.
+race_option_prompt_1 = """Below you will find the setting for a tabletop role-playing game, along with some locations of interest within that setting. Based on these details, please create 4 possible playable races for the player to choose from, along with a brief description of each.
 
 Here are the setting details:
 {setting_details}
@@ -179,7 +180,7 @@ Please return your response as a json object in the following format:
 YOU MUST INCLUDE DESCRIPTIONS WITHIN THE JSON OBJECT, AND ONLY WITHIN THE JSON OBJECT.
 """
 
-class_option_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with some locations of interest within that setting and the player's chosen race. Based on these details, please create 4 possible playable classes for the player to choose from as their startintg class, along with a brief description of each.
+class_option_prompt_1 = """Below you will find the setting for a tabletop role-playing game, along with some locations of interest within that setting and the player's chosen race. Based on these details, please create 4 possible playable classes for the player to choose from as their startintg class, along with a brief description of each.
 Here are the setting details:
 {setting_details}
 
@@ -213,7 +214,7 @@ Please return your response as a json object in the following format:
 YOU MUST INCLUDE DESCRIPTIONS WITHIN THE JSON OBJECT, AND ONLY WITHIN THE JSON OBJECT. Remember to consider the player's chosen race when designing the classes! Make sure the classes make sense given the player's chosen race.
 """
 
-background_option_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with some locations of interest within that setting, the player's chosen race, and the player's starting class. Based on these details, please create 4 possible backgrounds that serve as the player's origin, along with a brief description of each.
+background_option_prompt_1 = """Below you will find the setting for a tabletop role-playing game, along with some locations of interest within that setting, the player's chosen race, and the player's starting class. Based on these details, please create 4 possible backgrounds that serve as the player's origin, along with a brief description of each.
 Here are the setting details:
 {setting_details}
 

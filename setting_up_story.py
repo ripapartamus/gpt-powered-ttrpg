@@ -1,9 +1,10 @@
 import json
-import os
 from gpt_api import gpt_call
-from common.prompts import (setting_quiz_prompt, setting_quiz_format, setting_selection_prompt_1, setting_selection_prompt_2, setting_generation_prompt_1, setting_generation_prompt_2, setting_options, location_generation_prompt,\
+from common.prompts import (setting_quiz_prompt, setting_quiz_format, setting_selection_prompt_1, setting_selection_prompt_2, tone_options, setting_generation_prompt_1, setting_generation_prompt_2, setting_options, location_generation_prompt,\
                             race_option_prompt_1, race_option_prompt_2, class_option_prompt_1, class_option_prompt_2, background_option_prompt_1, background_option_prompt_2, story_beat_generation_prompt_1, story_beat_generation_prompt_2)
 from common.config import num_quiz_questions, num_locations, num_story_beats
+
+#TODO: add a check for whether a json is actually a json or just a string
 
 class GenerateStory:
     def __init__(self):
@@ -28,6 +29,7 @@ class GenerateStory:
         self.num_story_beats = num_story_beats
         # initialize variables
         self.setting_categories = None
+        self.selected_tone = None
         self.player_intro = None
         self.setting_details = None
         self.locations_of_interest = None
@@ -40,9 +42,40 @@ class GenerateStory:
         self.player_background = None
         self.story_beats = None
 
+    def create_setting(self):
+        print("""How would you like to generate your new world?""")
+        print("A. Take a personality quiz generate a setting")
+        print("B. I'll chose the setting for myself")
+        user_response = input("Your answer (A/B): ").strip().upper()
+
+        while user_response not in ["A", "B"]:
+            print("Invalid option. Please choose A or B.")
+            user_response = input("Your answer (A/B): ").strip().upper()
+
+        if user_response == "A":
+            self.get_setting_categories()
+        else:
+            self.user_select_setting_categories()
+
+        self.selected_tone = self.get_tone()
+
+        setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
+        self.setting_details = json.loads(gpt_call(setting_prompt_full, tone = self.selected_tone))
+
+        self.player_intro = self.setting_details.pop("INTRODUCTION")
+        self.setting_details = self.setting_details
+
+        return self.player_intro, self.setting_details
+
+    def get_setting_categories(self):
+        completed_quiz = self.give_setting_quiz()
+        setting_select_prompt_full = setting_selection_prompt_1.format(quiz_and_results = completed_quiz, setting_options = self.setting_options, num_setting_categories = self.num_setting_categories) + setting_selection_prompt_2
+        self.setting_categories = gpt_call(setting_select_prompt_full, tone = "balanced")
+        return self.setting_categories
+
     def get_setting_quiz(self):
         quiz_prompt_full = self.setting_quiz_prompt.format(setting_options = self.setting_options, num_quiz_questions = self.num_quiz_questions) + self.setting_quiz_format
-        response = gpt_call(quiz_prompt_full)
+        response = gpt_call(quiz_prompt_full, tone = "balanced")
         return response
 
     def give_setting_quiz(self):
@@ -68,12 +101,6 @@ class GenerateStory:
         quiz_with_responses = json.dumps(quiz, indent=4)
 
         return quiz_with_responses
-
-    def get_setting_categories(self):
-        completed_quiz = self.give_setting_quiz()
-        setting_select_prompt_full = setting_selection_prompt_1.format(quiz_and_results = completed_quiz, setting_options = self.setting_options, num_setting_categories = self.num_setting_categories) + setting_selection_prompt_2
-        self.setting_categories = gpt_call(setting_select_prompt_full)
-        return self.setting_categories
 
     def user_select_setting_categories(self):
         print(
@@ -122,29 +149,23 @@ class GenerateStory:
         }
         return self.setting_categories
 
-    def create_setting(self):
-        print("""Welcome! How would you like to generate your new world?""")
-        print("A. Take a personality quiz generate a setting")
-        print("B. I'll chose the setting for myself")
-        user_response = input("Your answer (A/B): ").strip().upper()
-        while user_response not in ["A", "B"]:
-            print("Invalid option. Please choose A or B.")
-            user_response = input("Your answer (A/B): ").strip().upper()
-        if user_response == "A":
-            self.get_setting_categories()
-        else:
-            self.user_select_setting_categories()
-        setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
-        self.setting_details = json.loads(gpt_call(setting_prompt_full))
-
-        self.player_intro = self.setting_details.pop("INTRODUCTION")
-        self.setting_details = self.setting_details
-
-        return self.player_intro, self.setting_details
+    def get_tone(self):
+        print("\nI prefer the tone of role-playing games to be:")
+        for i, option in enumerate(tone_options, start=1):
+            print(f"{i}. {option}")
+        while True:
+            try:
+                user_input = int(input(f"Choose a number between 1 and {len(tone_options)}: "))
+                if 1 <= user_input <= len(tone_options):
+                    return tone_options[user_input - 1]
+                else:
+                    print(f"Please enter a number between 1 and {len(tone_options)}.")
+            except ValueError:
+                print("Invalid input. Please enter a number.")
 
     def get_locations(self):
         location_prompt_full = location_generation_prompt.format(setting_details = self.setting_details, num_locations = self.num_locations)
-        self.locations_of_interest = gpt_call(location_prompt_full)
+        self.locations_of_interest = gpt_call(location_prompt_full, tone = self.selected_tone)
         return self.locations_of_interest
 
     # setting up player character preferences
@@ -187,21 +208,21 @@ class GenerateStory:
 
     def get_player_race(self):
         race_prompt_full = race_option_prompt_1.format(setting_details=self.setting_details) + race_option_prompt_2
-        race_options = gpt_call(race_prompt_full)
+        race_options = gpt_call(race_prompt_full, tone = self.selected_tone)
         # self.player_race = self.display_character_options(self, race_options, "Player race")
         self.player_race = self.display_character_options(option_json = race_options, trait = "Player race")
 
     def get_player_class(self):
         class_prompt_full = class_option_prompt_1.format(setting_details=self.setting_details,
                                                          player_race=self.player_race) + class_option_prompt_2
-        class_options = gpt_call(class_prompt_full)
+        class_options = gpt_call(class_prompt_full, tone = self.selected_tone)
         self.player_class = self.display_character_options(option_json = class_options, trait = "Player starting class")
 
     def get_player_background(self):
         background_prompt_full = background_option_prompt_1.format(setting_details=self.setting_details,
                                                                    player_race=self.player_race,
                                                                    player_class = self.player_class) + background_option_prompt_2
-        background_options = gpt_call(background_prompt_full)
+        background_options = gpt_call(background_prompt_full, tone = self.selected_tone)
         self.player_background = self.display_character_options(option_json = background_options, trait = "Player background")
 
     def get_player_name(self):
@@ -225,41 +246,5 @@ class GenerateStory:
     # putting everything together to form a story
     def get_story_beats(self):
         story_prompt_full = story_beat_generation_prompt_1.format(num_story_beats = self.num_story_beats, setting_details = self.setting_details, locations_of_interest = self.locations_of_interest, player_character = self.player_character) + story_beat_generation_prompt_2
-        self.story_beats = gpt_call(story_prompt_full)
+        self.story_beats = gpt_call(story_prompt_full, tone = self.selected_tone)
         return self.story_beats
-
-    def save_game_data(self):
-        # Prompt for subfolder name
-        subfolder_name = input("Enter a name for your game save subfolder: ").strip()
-
-        # Create the 'save_game' directory if it doesn't exist
-        save_dir = "save_game"
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        # Create the subfolder inside 'save_game'
-        subfolder_path = os.path.join(save_dir, subfolder_name)
-        if not os.path.exists(subfolder_path):
-            os.makedirs(subfolder_path)
-
-        # Save setting_details
-        setting_file_path = os.path.join(subfolder_path, "setting_details.json")
-        with open(setting_file_path, 'w') as file:
-            json.dump(self.setting_details, file, indent=4)
-
-        # Save locations_of_interest
-        locations_file_path = os.path.join(subfolder_path, "locations_of_interest.json")
-        with open(locations_file_path, 'w') as file:
-            json.dump(self.locations_of_interest, file, indent=4)
-
-        # Save player_character
-        locations_file_path = os.path.join(subfolder_path, "player_character.json")
-        with open(locations_file_path, 'w') as file:
-            json.dump(self.player_character, file, indent=4)
-
-        # Save story_beats
-        locations_file_path = os.path.join(subfolder_path, "story_beats.json")
-        with open(locations_file_path, 'w') as file:
-            json.dump(self.story_beats, file, indent=4)
-
-        print(f"Game data saved in {subfolder_path}")
