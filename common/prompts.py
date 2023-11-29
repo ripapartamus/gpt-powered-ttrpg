@@ -47,13 +47,13 @@ Please use the following json format:
 setting_options = {
   "categories": {
     "Fantasy": {
-      "subcategories": ["High fantasy", "Low fantasy", "Rainbow fantasy"]
+      "subcategories": ["High fantasy", "Low fantasy", "Rainbow fantasy", "Talking animals"]
     },
     "Sci-Fi": {
       "subcategories": ["Space opera", "Hard sci-fi", "Colonizing alien worlds"]
     },
     "Mythology": {
-      "subcategories": ["Egyptian mythology", "Aztec mythology", "Norse mythology", "Greco-Roman mythology", "Celtic mythology", "Japanese mythology"]
+      "subcategories": ["Egyptian mythology", "Aztec mythology", "Norse mythology", "Greco-Roman mythology", "Celtic mythology", "Japanese mythology", "Polynesian mythology", "Judeo-Christian mythology"]
     },
     "Punk": {
       "subcategories": ["Cyberpunk", "Steampunk", "Street punk"]
