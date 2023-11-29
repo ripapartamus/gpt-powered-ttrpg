@@ -1,9 +1,9 @@
 import json
 import os
 from gpt_api import gpt_call
-from common.prompts import (setting_quiz_prompt, setting_quiz_format, setting_selection_prompt_1, setting_selection_prompt_2, setting_generation_prompt, setting_options, location_generation_prompt,\
+from common.prompts import (setting_quiz_prompt, setting_quiz_format, setting_selection_prompt_1, setting_selection_prompt_2, setting_generation_prompt_1, setting_generation_prompt_2, setting_options, location_generation_prompt,\
                             race_option_prompt_1, race_option_prompt_2, class_option_prompt_1, class_option_prompt_2, background_option_prompt_1, background_option_prompt_2, story_beat_generation_prompt_1, story_beat_generation_prompt_2)
-from common.config import num_quiz_questions, num_setting_categories, num_locations, num_story_beats
+from common.config import num_quiz_questions, num_locations, num_story_beats
 
 class GenerateStory:
     def __init__(self):
@@ -13,7 +13,6 @@ class GenerateStory:
         self.setting_options = setting_options
         self.setting_selection_prompt_1 = setting_selection_prompt_1
         self.setting_selection_prompt_2 = setting_selection_prompt_2
-        self.setting_generation_prompt = setting_generation_prompt
         self.location_generation_prompt = location_generation_prompt
         self.race_option_prompt_1 = race_option_prompt_1
         self.race_option_prompt_2 = race_option_prompt_2
@@ -25,11 +24,11 @@ class GenerateStory:
         self.story_beat_generation_prompt_2 = story_beat_generation_prompt_2
         # config
         self.num_quiz_questions = num_quiz_questions
-        self.num_setting_categories = num_setting_categories
         self.num_locations = num_locations
         self.num_story_beats = num_story_beats
         # initialize variables
         self.setting_categories = None
+        self.player_intro = None
         self.setting_details = None
         self.locations_of_interest = None
         self.race_options = None
@@ -135,9 +134,13 @@ class GenerateStory:
             self.get_setting_categories()
         else:
             self.user_select_setting_categories()
-        setting_prompt_full = self.setting_generation_prompt.format(num_setting_categories = self.num_setting_categories, setting_categories = self.setting_categories)
-        self.setting_details = gpt_call(setting_prompt_full)
-        return self.setting_details
+        setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
+        self.setting_details = json.loads(gpt_call(setting_prompt_full))
+
+        self.player_intro = self.setting_details.pop("INTRODUCTION")
+        self.setting_details = self.setting_details
+
+        return self.player_intro, self.setting_details
 
     def get_locations(self):
         location_prompt_full = location_generation_prompt.format(setting_details = self.setting_details, num_locations = self.num_locations)

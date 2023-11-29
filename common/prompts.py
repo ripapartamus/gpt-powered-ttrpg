@@ -70,15 +70,26 @@ setting_options = {
   }
 }
 
-setting_generation_prompt = """The following are {num_setting_categories} setting subcategories chosen for a tabletop roleplaying game:
+setting_generation_prompt_1 = """The following are 2 setting categories chosen for a tabletop roleplaying game:
 {setting_categories}
-You will then combine the {num_setting_categories} selected subcategories to create a new, unique world for the game.
-You will return a description of this world to the user. The format of this description should be the following:
-1. SETTINGS: The {num_setting_categories} subcategories chosen.
-2. INTRODUCTION: A greeting that captures the tone/culture of this world, welcoming the player and providing flavor.
-3. WORLD DETAILS: The name of the world and a brief description of what life is like for the average person there.
-4. CONFLICT: The predominant conflict is in this world, which may or may not be related to the player's role and the eventual campaign of the game.
-5. FUN FACTS: A few fun facts about the world, its culture, or its inhabitants to get the player in the mood for the game.
+You will then combine the selected subcategories to create a new, unique world for the game.
+"""
+
+setting_generation_prompt_2 = """
+You will return a description of this world to the user. The format of this description should be a json object with the following structure:
+{
+  "SETTINGS": The setting categories chosen,
+  "WORLD_NAME": The name of the world,
+  "INTRODUCTION": A greeting that captures the tone/culture of this world, welcoming the player and providing flavor,
+  "WORLD_DETAILS": A brief description of what life is like for the average person there,
+  "CONFLICT": The predominant conflict in this world, which may or may not be related to the player's role and the eventual campaign of the game,
+  "FUN_FACTS": [
+    Fun fact 1 about the world, its culture, or its inhabitants,
+    Fun fact 2 about the world, its culture, or its inhabitants,
+    Fun fact 3 about the world, its culture, or its inhabitants
+  ]
+}
+
 """
 
 location_generation_prompt = """Below you will find the setting for a tabletop roleplaying game, along with some background information on that setting. Based on these details, please provide {num_locations} locations of interest within the setting.
@@ -89,7 +100,7 @@ Return the list as a json object that includes location name, location physical 
 Here are the details of the world: {setting_details}
 """
 
-story_beat_generation_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with some locations of interest within that setting and a description of the player's character. Based on these details, please write a story in {num_story_beats} acts. 
+story_beat_generation_prompt_1 = """Below you will find the setting for a tabletop roleplaying game, along with locations of interest and a description of the player's character. Based on these details, please write a story in {num_story_beats} acts. 
 First, provide a description of where the player is starting in this world. What is their initial role? How do they fit into the world around them?
 Second, provide a description of where the player will eventually end up if they're successful in this adventure. What will they achieve? How will their status change as a result of their actions?
 Third, provide a 2-3 sentence story arc that will describe how the player will get from their starting point to that end point.
@@ -129,6 +140,7 @@ Please output this as a json object using the following format:
       "description": Description of Story Beat 3,
       "primaryLocation": Primary location for Story Beat 3
     }
+    ...
   ]
 }
 
