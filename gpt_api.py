@@ -1,7 +1,7 @@
 from openai import OpenAI
 from common.credentials import GPT_KEY
 from common.config import token_param, temperature_param, top_p_param, model_name
-from common.prompts import system_prompt
+from common.general_prompts import system_prompt
 
 def gpt_call(prompt, tone):
     client = OpenAI(api_key=GPT_KEY)

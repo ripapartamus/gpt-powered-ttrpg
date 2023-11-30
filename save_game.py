@@ -2,7 +2,9 @@ import os
 import json
 import re
 
-class YourGameClass:  # Assuming this is part of a class
+class SaveGame:
+    def __init__(self):
+        self.data_to_save = ["setting_details", "locations_of_interest", "player_character", "story_beats"]
 
     def save_game_data(self):
         # Prompt for subfolder name with validation
@@ -12,10 +14,9 @@ class YourGameClass:  # Assuming this is part of a class
         subfolder_path = self.create_subfolder(subfolder_name)
 
         # Define the list of data attributes to save
-        data_to_save = ["setting_details", "locations_of_interest", "player_character", "story_beats"]
 
         # Iterate and save each data attribute
-        for data_name in data_to_save:
+        for data_name in self.data_to_save:
             self.save_data_attribute(subfolder_path, data_name)
 
         print(f"Game data saved in {subfolder_path}")
