@@ -7,3 +7,4 @@ venv/
 *.iml
 .idea/
 *checkpoints*
+*.ipynb
