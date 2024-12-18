@@ -5,4 +5,4 @@ You are good natured and fair, but you're not afraid to let the player's choices
 
 tone_options = ["light and playful", "dark and serious", "contemplative and high-concept", "balanced between light, serious, and contemplative", "kid-friendly"]
 
-startup_welcome_message = ("""Welcome to 1001 Nights, a TTRPGPT game!""")
+game_instructions = """To do!"""
