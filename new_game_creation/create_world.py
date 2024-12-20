@@ -15,163 +15,141 @@ class GenerateWorld:
         self.setting_details = None
         self.locations_of_interest = None
 
-    def world_creator(self):
-        st.write(create_world_welcome_message)
-        self.create_setting()
-        print(self.player_intro)
-        print("\nHere is some information about the world you will inhabit:\n")
-        for key, value in self.setting_details.items():
-            # Print the key and value if the key is not 'SETTINGS' or 'WORLD_NAME'
-            if key not in ['SETTINGS', 'WORLD_NAME']:
-                print(f"{key}: {value}\n")
-        print('\nPlease wait while we fill the world with interesting places...')
-        self.get_locations()
-        print("\nWorld map has been generated!\n")
-
-
-# the player is asked to select 2 setting categories, either by taking a personality quiz or selecting the categories directly
-# the player is then asked to choose the tone they want for the game
-# based on this, the world is generated
+    # the player is asked to select 2 setting categories, either by taking a personality quiz or selecting the categories directly
+    # the player is then asked to choose the tone they want for the game
+    # based on this, the world is generated
 
     def create_setting(self):
+        # Initialize state variables
+        if 'state' not in st.session_state:
+            st.session_state['state'] = 'select_method'
+        if 'creator_method' not in st.session_state:
+            st.session_state['creator_method'] = None
+        if 'first_category' not in st.session_state:
+            st.session_state['first_category'] = None
+        if 'second_category' not in st.session_state:
+            st.session_state['second_category'] = None
+        if 'responses' not in st.session_state:
+            st.session_state['responses'] = {}
 
-        def continue_select_method():
-            state = 'category_select'
+        # Handle states
+        if st.session_state['state'] == 'select_method':
+            st.write(create_world_welcome_message)
+            st.session_state['creator_method'] = st.radio(
+                label="How would you like to generate your world?",
+                options=[
+                    "Take a personality quiz to generate the setting",
+                    "I'll choose the setting for myself"
+                ],
+                index=None,
+                key='cm',
+                label_visibility='hidden'
+            )
+            if st.button('Continue'):
+                st.session_state['state'] = 'category_select'
 
-        state = 'select_method'
+        elif st.session_state['state'] == 'category_select':
+            if st.session_state['creator_method'] == "Take a personality quiz to generate the setting":
+                # Quiz handling
+                if 'quiz' not in st.session_state:
+                    with st.spinner('Please wait while Ogma creates a new personality quiz...'):
+                        quiz_prompt_full = setting_quiz_prompt.format(
+                            setting_options=setting_options,
+                            num_quiz_questions=num_quiz_questions
+                        ) + setting_quiz_format
+                        quiz = safe_json_parse(gpt_call(quiz_prompt_full))
+                        st.session_state['quiz'] = quiz
 
-        while state != 'end':
+                quiz = st.session_state['quiz']
+                st.subheader("Ogma will use the following questions to select the setting most suited to you.")
+                for question, options in quiz.items():
+                    st.session_state['responses'][question] = st.radio(
+                        options['Question'],
+                        options=list(options['Options'].values()),
+                        key=question,
+                        index=None
+                    )
 
-            if state == 'select_method':
-                st.write("""How would you like to generate your world?""")
-                st.radio(label='Method selector',
-                         options=["Take a personality quiz to generate the setting", "I'll chose the setting for myself"],
-                         index=None,
-                         key='creator_method')
-                if st.session_state.creator_method:
-                    st.button('Continue', key='continue_select_method_button', on_click=continue_select_method)
-
-            elif state == 'category_select':
-                if st.session_state.creator_method == "Take a personality quiz to generate the setting":
-                    self.get_setting_categories()
-                else:
-                    self.user_select_setting_categories()
-
+                all_answered = all(st.session_state['responses'].values())
+                if all_answered:
+                    if st.button("Submit responses"):
+                        with st.spinner('Please wait while Ogma selects the best setting for you...'):
+                            setting_select_prompt_full = setting_selection_prompt_1.format(
+                                quiz_and_results=st.session_state['responses'],
+                                setting_options=setting_options
+                            ) + setting_selection_prompt_2
+                            self.setting_categories = safe_json_parse(gpt_call(setting_select_prompt_full))
+                            st.session_state['setting_categories'] = self.setting_categories
+                        st.write('Ogma has selected the following categories for your story:')
+                        st.write(f"{st.session_state['setting_categories']["Setting selections"][0]["Category"]}--{st.session_state['setting_categories']["Setting selections"][0]["Subcategory"]}")
+                        st.write(f"{st.session_state['setting_categories']["Setting selections"][1]["Category"]}--{st.session_state['setting_categories']["Setting selections"][1]["Subcategory"]}")
+                        st.button('Continue', on_click=lambda: st.session_state.update({'state': 'select_tone'}))
             else:
-                raise Exception(f"{state} not a valid setting creation state.")
-
-            self.selected_tone = self.get_tone()
-
-            print('\nGenerating your world...\n')
-
-            setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
-            self.setting_details = json.loads(gpt_call(setting_prompt_full, tone = self.selected_tone))
-
-            self.setting_details = safe_json_parse(self.setting_details)
-
-            self.player_intro = self.setting_details.pop("INTRODUCTION")
-            self.setting_details = self.setting_details
-
-            return self.player_intro, self.setting_details
-
-    def get_setting_categories(self):
-        completed_quiz = self.give_setting_quiz()
-        print('\nChoosing the setting most suited to your responses...')
-        setting_select_prompt_full = setting_selection_prompt_1.format(quiz_and_results = completed_quiz, setting_options = setting_options) + setting_selection_prompt_2
-        self.setting_categories = gpt_call(setting_select_prompt_full)
-        return self.setting_categories
-
-    def give_setting_quiz(self):
-        with st.spinner('Please wait while Ogma creates a new personality quiz...'):
-            quiz_prompt_full = setting_quiz_prompt.format(setting_options=setting_options, num_quiz_questions=num_quiz_questions) + setting_quiz_format
-            quiz = gpt_call(quiz_prompt_full)
-            quiz = json.loads(quiz)
-
-        st.subheader("Ogma will use the following questions to select the setting most suited to you.")
-
-        # Iterate through each question
-        for key, value in quiz.items():
-            print(f"{value['Question']}")
-            for option, text in value['Options'].items():
-                print(f"  {option}: {text}")
-
-            # Get user response
-            user_response = input("Your answer (A/B/C/D): ").strip().upper()
-            while user_response not in value['Options']:
-                print("Invalid option. Please choose A, B, C, or D.")
-                user_response = input("Your answer (A/B/C/D): ").strip().upper()
-
-            # Append the response to the JSON object
-            quiz[key]['User Response'] = user_response
-
-        quiz_with_responses = json.dumps(quiz, indent=4)
-
-        return quiz_with_responses
-
-    def user_select_setting_categories(self):
-        print(
-            "\n\nOkay! Let's get started! You will be selecting two of these setting categories to create your world. You will then select a specific setting subcategory within those two.\n")
-
-        def get_user_selection(options):
-            for i, option in enumerate(options, start=1):
-                print(f"{i}. {option}")
-            while True:
-                try:
-                    user_input = int(input(f"Choose a number between 1 and {len(options)}: "))
-                    if 1 <= user_input <= len(options):
-                        return user_input - 1
-                    else:
-                        print(f"Please enter a number between 1 and {len(options)}.")
-                except ValueError:
-                    print("Invalid input. Please enter a number.")
-
-        categories = list(setting_options["categories"].keys())
-
-        # Select first category
-        print("\nPlease select your first setting category from the following options:\n")
-        first_category_index = get_user_selection(categories)
-        first_category = categories.pop(first_category_index)
-
-        # Select second category
-        print("\nNow select a second category from the following options:\n")
-        second_category_index = get_user_selection(categories)
-        second_category = categories[second_category_index]
-
-        # Select subcategories
-        def select_subcategory(category):
-            subcategories = list(setting_options["categories"][category]["subcategories"])
-            print(f"\nPlease select from the following {category} subcategories:\n")
-            subcategory_index = get_user_selection(subcategories)
-            return subcategories[subcategory_index]
-
-        first_subcategory = select_subcategory(first_category)
-        second_subcategory = select_subcategory(second_category)
-
-        self.setting_categories = {
-            "Setting selections": [
-                {"Category": first_category, "Subcategory": first_subcategory},
-                {"Category": second_category, "Subcategory": second_subcategory}
-            ]
-        }
-        return self.setting_categories
-
-    def get_tone(self):
-        print("\nI prefer the tone of role-playing games to be:")
-        for i, option in enumerate(tone_options, start=1):
-            print(f"{i}. {option}")
-        while True:
-            try:
-                user_input = int(input(f"Choose a number between 1 and {len(tone_options)}: "))
-                if 1 <= user_input <= len(tone_options):
-                    return tone_options[user_input - 1]
+                # Direct category selection
+                categories = list(setting_options["categories"].keys())
+                if not st.session_state['first_category']:
+                    st.session_state['first_category'] = st.radio(
+                        "Choose your first setting category:",
+                        categories,
+                        key="first_category"
+                    )
+                elif not st.session_state['second_category']:
+                    categories.remove(st.session_state['first_category'])
+                    st.write(f"You have selected {st.session_state['first_category']} as your first category.")
+                    st.session_state['second_category'] = st.selectbox(
+                        "Choose your second setting category:",
+                        categories,
+                        key="second_category"
+                    )
                 else:
-                    print(f"Please enter a number between 1 and {len(tone_options)}.")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
+                    # Subcategory selection
+                    def select_subcategory(category):
+                        subcategories = list(setting_options["categories"][category]["subcategories"])
+                        return st.radio(f"Select a subcategory for {category}:", subcategories,
+                                        key=f"{category}_subcategory")
 
-    # given the tone of the campaign and setting, several locations of interest are generated. These help inform story and character background later
-    def get_locations(self):
-        location_prompt_full = location_generation_prompt.format(setting_details = self.setting_details, num_locations = num_locations)
-        self.locations_of_interest = gpt_call(location_prompt_full, tone = self.selected_tone)
-        return self.locations_of_interest
+                    first_subcategory = select_subcategory(st.session_state['first_category'])
+                    second_subcategory = select_subcategory(st.session_state['second_category'])
 
+                    if first_subcategory and second_subcategory:
+                        self.setting_categories = {
+                            "Setting selections": [
+                                {"Category": st.session_state['first_category'], "Subcategory": first_subcategory},
+                                {"Category": st.session_state['second_category'], "Subcategory": second_subcategory}
+                            ]
+                        }
+                        st.session_state['setting_categories'] = self.setting_categories
+
+                        st.button('Continue', on_click=lambda: st.session_state.update({'state': 'select_tone'}))
+
+        elif st.session_state['state'] == 'select_tone':
+            st.session_state.selected_tone = st.radio(
+                "Select the tone you'd like Ogma to take when weaving your story:",
+                tone_options,
+                index=None
+            )
+            if st.session_state.selected_tone:
+                st.session_state['selected_tone'] = st.session_state.selected_tone
+                st.button('Continue', on_click=lambda: st.session_state.update({'state': 'create_setting'}))
+
+        elif st.session_state['state'] == 'create_setting':
+            st.write(f'Your setting: {st.session_state['setting_categories']["Setting selections"][0]["Category"]}--{st.session_state['setting_categories']["Setting selections"][0]["Subcategory"]}; {st.session_state['setting_categories']["Setting selections"][1]["Category"]}--{st.session_state['setting_categories']["Setting selections"][1]["Subcategory"]}')
+            st.write( f"Your tone: {st.session_state.selected_tone}")
+            with st.spinner('Please wait while Ogma crafts a new world...'):
+                setting_prompt_full = setting_generation_prompt_1.format(
+                    setting_categories=st.session_state['setting_categories']
+                ) + setting_generation_prompt_2
+                self.setting_details = safe_json_parse(gpt_call(setting_prompt_full, tone=st.session_state['selected_tone']))
+
+                self.setting_details = safe_json_parse(self.setting_details)
+                self.player_intro = self.setting_details.pop("INTRODUCTION")
+                st.session_state.setting_details = self.setting_details
+                st.write(self.player_intro)
+                st.write("\nHere is some information about the world you will inhabit:\n")
+                for key, value in self.setting_details.items():
+                    if key not in ['SETTINGS', 'WORLD_NAME']:
+                        st.write(f"{key}: {value}\n")
+            st.button('Finish', on_click=lambda: st.session_state.update({'state': 'end'}))
+
+        else:
+            raise Exception(f'{st.session_state['state']} not valid world creation state')
