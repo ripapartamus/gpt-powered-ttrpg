@@ -1,9 +1,9 @@
 # GPT settings
-model_name = 'gpt-3.5-turbo'
-# model_name = 'gpt-4'
-token_param = 2000
-temperature_param = 0.8
-top_p_param = 0.8
+chat_gpt = {'model': 'gpt-4o',
+            'max_tokens': 2000,
+            'temperature': 0.9,
+            'top_p': 0.9
+            }
 
 # world generation settings
 num_quiz_questions = 10

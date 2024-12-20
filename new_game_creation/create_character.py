@@ -1,6 +1,6 @@
 import json
-from gpt_api import gpt_call
-from create_character.create_character_prompts import *
+from gpt.gpt_api import gpt_call
+from new_game_creation.create_character_prompts import *
 
 class GenerateCharacter:
     def __init__(self, selected_tone, setting_details, locations_of_interest):

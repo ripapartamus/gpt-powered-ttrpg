@@ -1,7 +1,7 @@
 from common.utils import safe_json_parse
-from gpt_api import gpt_call
+from gpt.gpt_api import gpt_call
 from common.config import num_story_beats
-from create_story.create_story_prompts import *
+from new_game_creation.create_story_prompts import *
 
 # putting everything together to form a story
 class GenerateStory:

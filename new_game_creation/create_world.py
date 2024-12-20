@@ -1,7 +1,8 @@
+import streamlit as st
 import json
 from common.utils import safe_json_parse
-from gpt_api import gpt_call
-from create_world.create_world_prompts import *
+from gpt.gpt_api import gpt_call
+from new_game_creation.create_world_prompts import *
 from common.general_prompts import tone_options
 from common.config import num_quiz_questions, num_locations
 
@@ -15,7 +16,7 @@ class GenerateWorld:
         self.locations_of_interest = None
 
     def world_creator(self):
-        print(create_world_welcome_message)
+        st.write(create_world_welcome_message)
         self.create_setting()
         print(self.player_intro)
         print("\nHere is some information about the world you will inhabit:\n")
@@ -33,52 +34,60 @@ class GenerateWorld:
 # based on this, the world is generated
 
     def create_setting(self):
-        print("""How would you like to generate your world?""")
-        print("1. Take a personality quiz to generate the setting")
-        print("2. I'll chose the setting for myself")
-        user_response = input("Your answer (1/2): ").strip().upper()
 
-        while user_response not in ["1", "2"]:
-            print("Invalid option. Please choose 1 or 2.")
-            user_response = input("Your answer (1/2): ").strip().upper()
+        def continue_select_method():
+            state = 'category_select'
 
-        if user_response == "1":
-            self.get_setting_categories()
-        else:
-            self.user_select_setting_categories()
+        state = 'select_method'
 
-        self.selected_tone = self.get_tone()
+        while state != 'end':
 
-        print('\nGenerating your world...\n')
+            if state == 'select_method':
+                st.write("""How would you like to generate your world?""")
+                st.radio(label='Method selector',
+                         options=["Take a personality quiz to generate the setting", "I'll chose the setting for myself"],
+                         index=None,
+                         key='creator_method')
+                if st.session_state.creator_method:
+                    st.button('Continue', key='continue_select_method_button', on_click=continue_select_method)
 
-        setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
-        self.setting_details = json.loads(gpt_call(setting_prompt_full, tone = self.selected_tone))
+            elif state == 'category_select':
+                if st.session_state.creator_method == "Take a personality quiz to generate the setting":
+                    self.get_setting_categories()
+                else:
+                    self.user_select_setting_categories()
 
-        self.setting_details = safe_json_parse(self.setting_details)
+            else:
+                raise Exception(f"{state} not a valid setting creation state.")
 
-        self.player_intro = self.setting_details.pop("INTRODUCTION")
-        self.setting_details = self.setting_details
+            self.selected_tone = self.get_tone()
 
-        return self.player_intro, self.setting_details
+            print('\nGenerating your world...\n')
+
+            setting_prompt_full = setting_generation_prompt_1.format(setting_categories = self.setting_categories) + setting_generation_prompt_2
+            self.setting_details = json.loads(gpt_call(setting_prompt_full, tone = self.selected_tone))
+
+            self.setting_details = safe_json_parse(self.setting_details)
+
+            self.player_intro = self.setting_details.pop("INTRODUCTION")
+            self.setting_details = self.setting_details
+
+            return self.player_intro, self.setting_details
 
     def get_setting_categories(self):
         completed_quiz = self.give_setting_quiz()
         print('\nChoosing the setting most suited to your responses...')
         setting_select_prompt_full = setting_selection_prompt_1.format(quiz_and_results = completed_quiz, setting_options = setting_options) + setting_selection_prompt_2
-        self.setting_categories = gpt_call(setting_select_prompt_full, tone = "balanced")
+        self.setting_categories = gpt_call(setting_select_prompt_full)
         return self.setting_categories
 
-    def get_setting_quiz(self):
-        quiz_prompt_full = setting_quiz_prompt.format(setting_options = setting_options, num_quiz_questions = num_quiz_questions) + setting_quiz_format
-        response = gpt_call(quiz_prompt_full, tone = "balanced")
-        return response
-
     def give_setting_quiz(self):
-        # Parse the JSON string
-        quiz = self.get_setting_quiz()
-        quiz = json.loads(quiz)
+        with st.spinner('Please wait while Ogma creates a new personality quiz...'):
+            quiz_prompt_full = setting_quiz_prompt.format(setting_options=setting_options, num_quiz_questions=num_quiz_questions) + setting_quiz_format
+            quiz = gpt_call(quiz_prompt_full)
+            quiz = json.loads(quiz)
 
-        print("\nThe following questions will be used to select the setting most suited to you.\n")
+        st.subheader("Ogma will use the following questions to select the setting most suited to you.")
 
         # Iterate through each question
         for key, value in quiz.items():
