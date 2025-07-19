@@ -1,6 +1,5 @@
-import streamlit as st
-from new_game_creation.new_game_creator import GenerateWorld
+from new_game_creation.new_game_creator import NewGameCreator
 
-world = GenerateWorld()
+new_game = NewGameCreator()
 
-world.create_setting()
+new_game.create_new_game()

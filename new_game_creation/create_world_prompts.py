@@ -1,6 +1,34 @@
 # prompt for creating new setting
 create_world_welcome_message = """It's the dawn of a new world! 
-\nEvery aspect of this game will be totally unique to you--the setting, the story, the characters, it will all be generated based on your choices.\n"""
+\nEvery aspect of this game will be totally unique to you\u2014the setting, the story, and the characters will all be generated based on your choices.\n"""
+
+tone_options = ["light and playful", "dark and serious", "contemplative and high-concept", "balanced between light, serious, and high-concept", "kid-friendly"]
+
+setting_options = {
+  "categories": {
+    "Fantasy": {
+      "subcategories": ["High fantasy", "Low fantasy", "Rainbow fantasy", "Talking animals"]
+    },
+    "Sci-Fi": {
+      "subcategories": ["Space opera", "Hard sci-fi", "Colonizing alien worlds"]
+    },
+    "Mythology": {
+      "subcategories": ["Egyptian mythology", "Aztec mythology", "Norse mythology", "Greco-Roman mythology", "Celtic mythology", "Japanese mythology", "Polynesian mythology", "Judeo-Christian mythology"]
+    },
+    "Punk": {
+      "subcategories": ["Cyberpunk", "Steampunk", "Street punk"]
+    },
+    "Horror": {
+      "subcategories": ["Gothic horror", "Eldtritch horror", "Vampire"]
+    },
+    "Stylish": {
+      "subcategories": ["Film noir", "Anime", "X-Treme"]
+    },
+    "Cinematic": {
+      "subcategories": ["Old West", "Pirate", "Post-apocalyptic", "Superhero", "Kung fu"]
+    }
+  }
+}
 
 setting_quiz_prompt = """Your will ask a user about their preferences, and from those preferences craft a setting for a tabletop RPG setting that suits their tastes. The catch is, you'll be asking them about preferences that don't directly relate to games!
 
@@ -42,39 +70,13 @@ Please use the following json format:
 }
 """
 
-setting_options = {
-  "categories": {
-    "Fantasy": {
-      "subcategories": ["High fantasy", "Low fantasy", "Rainbow fantasy", "Talking animals"]
-    },
-    "Sci-Fi": {
-      "subcategories": ["Space opera", "Hard sci-fi", "Colonizing alien worlds"]
-    },
-    "Mythology": {
-      "subcategories": ["Egyptian mythology", "Aztec mythology", "Norse mythology", "Greco-Roman mythology", "Celtic mythology", "Japanese mythology", "Polynesian mythology", "Judeo-Christian mythology"]
-    },
-    "Punk": {
-      "subcategories": ["Cyberpunk", "Steampunk", "Street punk"]
-    },
-    "Horror": {
-      "subcategories": ["Gothic horror", "Eldtritch horror", "Vampire"]
-    },
-    "Stylish": {
-      "subcategories": ["Film noir", "Anime", "X-Treme"]
-    },
-    "Cinematic": {
-      "subcategories": ["Old West", "Pirate", "Post-apocalyptic", "Superhero", "Kung fu"]
-    }
-  }
-}
-
 setting_generation_prompt_1 = """The following are 2 setting categories chosen for a tabletop role-playing game:
 {setting_categories}
+The user prefers the tone of the game to be: {tone}
 You will then combine the selected subcategories to create a new, unique world for the game.
 """
 
-setting_generation_prompt_2 = """
-You will return a description of this world to the user. The format of this description should be a json object with the following structure:
+setting_generation_prompt_2 = """You will return a description of this world to the user. The format of this description should be a json object with the following structure:
 {
   "SETTINGS": The setting categories chosen,
   "WORLD_NAME": The name of the world,
@@ -89,10 +91,23 @@ You will return a description of this world to the user. The format of this desc
 }
 """
 
-location_generation_prompt = """Below you will find the setting for a tabletop role-playing game, along with some background information on that setting. Based on these details, please provide {num_locations} locations of interest within the setting.
+location_generation_prompt_1 = """Below you will find the setting for a tabletop role-playing game, along with some background information on that setting. Based on these details, please provide locations of interest within the setting.
 Each location of interest should showcase the fascinating and diverse world of the setting, but fit together into a cohesive world--these places should be able to coexist in the same setting.
 
-Return the list as a json object that includes location name, location physical description, and reason for location's importance.
-
-Here are the details of the world: {setting_details}
+Return this as list of json objects formatted with the following structure:
+[
+{
+"NAME": the name of the first location,
+"DESCRIPTION": a brief physical description of the first location,
+"IMPORTANCE": a brief description of why the first locaiton is important to the world
+},
+{
+"NAME": the name of the second location,
+"DESCRIPTION": a brief physical description of the second location,
+"IMPORTANCE": a brief description of why the second locaiton is important to the world
+},
+...
+]
 """
+
+location_generation_prompt_2 = """Please provide {num_locations} locations in this format. Here are the details of the world: {setting_details}"""

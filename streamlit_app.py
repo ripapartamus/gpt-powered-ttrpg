@@ -1,6 +1,6 @@
 import streamlit as st
 from common.general_prompts import game_instructions
-from new_game_creation.new_game_creator import NewGameCreator
+from new_game_creation.new_game_creator_old import NewGameCreator
 
 st.set_page_config(layout='wide')
 
